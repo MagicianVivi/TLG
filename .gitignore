@@ -2,6 +2,9 @@
 *.pyc
 *.pyo
 
+# Virtualenv
+server/venv/
+
 # Emacs
 *\~
 \#*\#
