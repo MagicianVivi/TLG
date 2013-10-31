@@ -1,11 +1,13 @@
 from flask import Flask, jsonify, request
 from requests import get
+from crossdomain import crossdomain
 
 app = Flask(__name__)
 GITHUB_API_BASE_URL = 'https://api.github.com/'
 GITHUB_API_SEARCH_URL = GITHUB_API_BASE_URL + 'search/'
 
-@app.route('/search', methods=['GET'])
+@app.route('/search')
+@crossdomain(origin='*')
 def search():
     query_url = GITHUB_API_SEARCH_URL + 'repositories'
     query_request = get(query_url, params=request.args)
