@@ -3,15 +3,16 @@ from requests import get
 from flask.ext.cors import origin
 
 app = Flask(__name__)
-GITHUB_API_BASE_URL = 'https://api.github.com/'
-GITHUB_API_SEARCH_URL = GITHUB_API_BASE_URL + 'search/'
+app.config.from_object('configuration')
 
-def get_request_json(url, params=None):
+def get_request_json(url, params={}):
     """
     Helper for sending a get request and getting the returned json
     """
-    
-    req = get(url, params=params)
+    auth_params = params.copy()
+    auth_params['client_id'] = app.config['GITHUB_CLIENT_ID']
+    auth_params['client_secret'] = app.config['GITHUB_CLIENT_SECRET']
+    req = get(url, params=auth_params)
     return req.json()
 
 @app.route('/search', methods=['GET'])
@@ -25,7 +26,7 @@ def search():
     TODO : think of a way to implement order and sort
     """
 
-    query_url = GITHUB_API_SEARCH_URL + 'repositories'
+    query_url = app.config['GITHUB_API_SEARCH_URL'] + 'repositories'
     query_data = get_request_json(query_url, params=request.args)
     return jsonify(query_data)        
 
@@ -100,4 +101,4 @@ def get_other_contributors(contributors, commits_light_data):
              if u["url"] not in known_contributors ]
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
