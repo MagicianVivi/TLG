@@ -6,6 +6,14 @@ app = Flask(__name__)
 GITHUB_API_BASE_URL = 'https://api.github.com/'
 GITHUB_API_SEARCH_URL = GITHUB_API_BASE_URL + 'search/'
 
+def get_request_json(url, params=None):
+    """
+    Helper for sending a get request and getting the returned json
+    """
+    
+    req = get(url, params=params)
+    return req.json()
+
 @app.route('/search', methods=['GET'])
 @origin('null')
 def search():
@@ -18,8 +26,7 @@ def search():
     """
 
     query_url = GITHUB_API_SEARCH_URL + 'repositories'
-    query_request = get(query_url, params=request.args)
-    query_data = query_request.json()
+    query_data = get_request_json(query_url, params=request.args)
     return jsonify(query_data)        
 
 @app.route('/repository', methods=['GET'])
@@ -35,12 +42,11 @@ def repository():
 
     repo_url = request.args.get('url')
 
-    commits_request = get(repo_url + "commits?per_page=100")
-    commits_data = commits_request.json()
+    commits_params = {'per_page' : 100}
+    commits_data = get_request_json(repo_url + "/commits", commits_params)
     returned_data = process_commits(commits_data)
 
-    contributors_request = get(repo_url + "contributors")
-    contributors_data = contributors_request.json()
+    contributors_data = get_request_json(repo_url + "/contributors")
     returned_data["others"] = get_other_contributors(contributors_data, 
                                                      returned_data)
 
