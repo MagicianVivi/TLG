@@ -1,6 +1,23 @@
 var api = (function () {
     "use strict";
 
+    function get_json(url, callback) {
+        var request = new XMLHttpRequest();
+        request.onreadystatechange = function() {
+            if (request.readyState === 4) {
+                if (request.status === 200) {
+                    var data = JSON.parse(request.responseText);
+                    callback(data);
+                } else {
+                    callback(undefined);
+                }
+            }
+        };
+
+        request.open('GET', url);
+        request.send();
+    }
+
     function format_query(field_id) {
         var field = document.getElementById(field_id);
         var query = field.value.trim().replace(/\s+/g, '+');
@@ -43,9 +60,9 @@ var api = (function () {
         // put query_string in hash to make url bookmarkable
         update_hash(query_string);
 
-        d3.json(
+        get_json(
             construct_url('search', query_string),
-            function (error, data) {
+            function (data) {
                 if (data === undefined) {
                     alert('Error: the search request did not work, please try again');
                 } else {
@@ -58,13 +75,13 @@ var api = (function () {
     function call_repo_api(field_id) {
         var query_string = create_query_string(field_id);
 
-        d3.json(
+        get_json(
             construct_url('repository', query_string),
-            function (error, data) {
+            function (data) {
                 if (data === undefined) {
                     alert('Error: the repository request did not work, please try again');
                 } else {
-                    console.log(data);
+                    display_repository_results(data);
                 }
             }
         );
@@ -108,6 +125,14 @@ var api = (function () {
         remove_children(results_div);
 
         results_div.appendChild(create_children_fragment(result_array));
+    }
+
+    function extract_username(url) {
+        return url.slice(url.lastIndexOf("/") + 1);
+    }
+
+    function display_repository_results(json) {
+
     }
 
     return {
