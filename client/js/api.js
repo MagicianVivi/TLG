@@ -1,5 +1,5 @@
-var api = (function () {
-    "use strict";
+define(['./display'], function (display) {
+    'use strict';
 
     function get_json(url, callback) {
         var request = new XMLHttpRequest();
@@ -66,14 +66,14 @@ var api = (function () {
                 if (data === undefined) {
                     alert('Error: the search request did not work, please try again');
                 } else {
-                    display_search_results(data);
+                    display.search_results(data, call_repo_api);
                 }
             }
         );
     }
 
-    function call_repo_api(field_id) {
-        var query_string = create_query_string(field_id);
+    function call_repo_api() {
+        var query_string = create_query_string(this.id);
 
         get_json(
             construct_url('repository', query_string),
@@ -81,58 +81,10 @@ var api = (function () {
                 if (data === undefined) {
                     alert('Error: the repository request did not work, please try again');
                 } else {
-                    display_repository_results(data);
+                    display.repository_results(data);
                 }
             }
         );
-    }    
-
-    function remove_children(parent) {
-        while (parent.lastChild) {
-            parent.removeChild(parent.lastChild);
-        }
-    }
-
-    function create_children_fragment(children) {
-        var fragment = document.createDocumentFragment();
-        children.forEach(function (element) {
-            fragment.appendChild(element);
-        });
-
-        return fragment;
-    }
-
-    function format_search_result(element, index) {
-        var result_div = document.createElement('div');
-        result_div.className = 'result';
-        result_div.id = 'result' + index;
-        result_div.textContent = element.full_name;
-        result_div.onclick = function () {call_repo_api(result_div.id); };
-        result_div.setAttribute('data', element.url)
-
-        return result_div;
-    }
-
-    function display_search_results(json) {
-        var result_array = [];
-
-        var items = json.items;
-        items.forEach(function (element, index) {
-            result_array.push(format_search_result(element, index));
-        });
-
-        var results_div = document.getElementById('search_results');
-        remove_children(results_div);
-
-        results_div.appendChild(create_children_fragment(result_array));
-    }
-
-    function extract_username(url) {
-        return url.slice(url.lastIndexOf("/") + 1);
-    }
-
-    function display_repository_results(json) {
-
     }
 
     return {
@@ -140,4 +92,4 @@ var api = (function () {
         call_repo_api: call_repo_api
     };
 
-}());
+});

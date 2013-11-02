@@ -3,12 +3,13 @@
   <head>
     <meta charset="utf-8">
     <title>The Long Git</title>
-    <script type="text/javascript" src="js/api.js"></script>
+    <script type="text/javascript" data-main="js/main.js" src="js/require.js">
+    </script>
   </head>
   <body>
     <label for="search_field">The Long Git search :</label>
     <input type="search" name="search_field" id="search_field"/>
-    <button onclick="api.call_search_api()">GO!</button>
+    <button id="submit_query">GO!</button>
     <div id="search_results">Here shall be results!</div>
   </body>
 </html>
