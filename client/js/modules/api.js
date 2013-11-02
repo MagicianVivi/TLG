@@ -4,9 +4,10 @@ define(['./display'], function (display) {
     function get_json(url, callback) {
         var request = new XMLHttpRequest();
         request.onreadystatechange = function() {
+            var data;
             if (request.readyState === 4) {
                 if (request.status === 200) {
-                    var data = JSON.parse(request.responseText);
+                    data = JSON.parse(request.responseText);
                     callback(data);
                 } else {
                     callback(undefined);
@@ -19,8 +20,8 @@ define(['./display'], function (display) {
     }
 
     function format_query(field_id) {
-        var field = document.getElementById(field_id);
-        var query = field.value.trim().replace(/\s+/g, '+');
+        var field = document.getElementById(field_id),
+        query = field.value.trim().replace(/\s+/g, '+');
 
         // set query to data attribute for further work
         field.setAttribute('data', query);
@@ -29,8 +30,8 @@ define(['./display'], function (display) {
     function create_query_string(field_id, search) {
         search = (search === undefined) ? false : search;
 
-        var key;
-        var value = document.getElementById(field_id).getAttribute('data');
+        var key,
+        value = document.getElementById(field_id).getAttribute('data');
 
         if (search === true) {
             key = 'q';
@@ -52,10 +53,11 @@ define(['./display'], function (display) {
     }
 
     function call_search_api() {
-        var field_id = 'search_field';
+        var query_string,
+        field_id = 'search_field';
 
         format_query(field_id);
-        var query_string = create_query_string(field_id, true);
+        query_string = create_query_string(field_id, true);
 
         // put query_string in hash to make url bookmarkable
         update_hash(query_string);

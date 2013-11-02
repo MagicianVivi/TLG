@@ -37,19 +37,21 @@ def repository():
     Endpoint for getting a repository data from the Github API.
     Return a custom JSON containing the top contributors (for the last 100
     commits) with their Github API url as key and an array of their commits
-    (message and date) + a list of every other contributors on the repository 
-    (again their Github API url) in an array under the "others" key.
+    (message and date) under the key 'commits' + a list of every contributors
+    on the repository (again their Github API url) in an array under the 
+    'contributors' key.
     """
+
+    returned_data = {}
 
     repo_url = request.args.get('url')
 
     commits_params = {'per_page' : 100}
-    commits_data = get_request_json(repo_url + "/commits", commits_params)
-    returned_data = process_commits(commits_data)
+    commits_data = get_request_json(repo_url + '/commits', commits_params)
+    returned_data['commits'] = process_commits(commits_data)
 
-    contributors_data = get_request_json(repo_url + "/contributors")
-    returned_data["others"] = get_other_contributors(contributors_data, 
-                                                     returned_data)
+    contributors_data = get_request_json(repo_url + '/contributors')
+    returned_data['contributors'] = format_contributors(contributors_data)
 
     return jsonify(returned_data)
 
@@ -65,14 +67,13 @@ def process_commits(commits):
     for commit_object in commits:
         # The top level author object is null on some commit
         # mirroring problem on github end???
-        author = commit_object.get("author",None)
+        author = commit_object.get('author',None)
+        commit = format_commit(commit_object['commit'])
         if author is not None:
-            author_url = author["url"]
-            if author_url in results:
-                results[author_url].append(format_commit(
-                                           commit_object["commit"]))
-            else:
-                results[author_url] = [format_commit(commit_object["commit"])]
+            author_url = author['url']
+            results.setdefault(author_url, []).append(commit)
+        else:
+            results.setdefault('anonymous', []).append(commit)
 
     return results
         
@@ -82,23 +83,14 @@ def format_commit(commit):
     a dict.
     """
 
-    commit_light_dict = {}
-    
-    commit_light_dict["message"] = commit["message"]
-    commit_light_dict["date"] = commit["author"]["date"]
+    return commit['author']['date']
 
-    return commit_light_dict
-
-def get_other_contributors(contributors, commits_light_data):
+def format_contributors(contributors):
     """
-    Return a list of the Github API url of contributors not already present
-    in commits_light_data
+    Return a list of the Github API url of contributors for the repository
     """
-
-    known_contributors = commits_light_data.keys()
     
-    return [ u["url"] for u in contributors 
-             if u["url"] not in known_contributors ]
+    return [ u['url'] for u in contributors ]
 
 if __name__ == '__main__':
     app.run()
