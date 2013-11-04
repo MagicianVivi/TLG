@@ -16,7 +16,7 @@ def get_request_json(url, params={}):
     return req.json()
 
 @app.route('/search', methods=['GET'])
-@origin('null')
+@origin(app.config['ORIGIN'])
 def search():
     """
     Endpoint for calling Github search API.
@@ -31,7 +31,7 @@ def search():
     return jsonify(query_data)        
 
 @app.route('/repository', methods=['GET'])
-@origin('null')
+@origin(app.config['ORIGIN'])
 def repository():
     """
     Endpoint for getting a repository data from the Github API.
@@ -41,6 +41,43 @@ def repository():
     on the repository (again their Github API url) in an array under the 
     'contributors' key.
     """
+
+    def format_commit(commit):
+        """
+        Procces a commit object to return only the message and the timestamp in
+        a dict.
+        """
+
+        return commit['author']['date']
+
+    def process_commits(commits):
+        """
+        Process the commits of a repository from the Github API.
+        Return a dict with the url of every authors found as key, and an array
+        of their commits as value.
+        """
+
+        results = {}
+    
+        for commit_object in commits:
+            # The top level author object is null on some commit
+            # mirroring problem on github end???
+            author = commit_object.get('author',None)
+            commit = format_commit(commit_object['commit'])
+            if author is not None:
+                author_url = author['url']
+                results.setdefault(author_url, []).append(commit)
+            else:
+                results.setdefault('anonymous', []).append(commit)
+
+        return results
+    
+    def format_contributors(contributors):
+        """
+        Return a list of the Github API url of contributors for the repository.
+        """
+            
+        return [ u['url'] for u in contributors ]
 
     returned_data = {}
 
@@ -54,43 +91,6 @@ def repository():
     returned_data['contributors'] = format_contributors(contributors_data)
 
     return jsonify(returned_data)
-
-def process_commits(commits):
-    """
-    Process the commits of a repository from the Github API.
-    Return a dict with the url of every authors found as key, and an array
-    of their commits as value.
-    """
-
-    results = {}
-    
-    for commit_object in commits:
-        # The top level author object is null on some commit
-        # mirroring problem on github end???
-        author = commit_object.get('author',None)
-        commit = format_commit(commit_object['commit'])
-        if author is not None:
-            author_url = author['url']
-            results.setdefault(author_url, []).append(commit)
-        else:
-            results.setdefault('anonymous', []).append(commit)
-
-    return results
-        
-def format_commit(commit):
-    """
-    Procces a commit object to return only the message and the timestamp in
-    a dict.
-    """
-
-    return commit['author']['date']
-
-def format_contributors(contributors):
-    """
-    Return a list of the Github API url of contributors for the repository
-    """
-    
-    return [ u['url'] for u in contributors ]
 
 if __name__ == '__main__':
     app.run()
