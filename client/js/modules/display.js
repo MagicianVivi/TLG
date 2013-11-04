@@ -29,25 +29,23 @@ define(['../lib/chartjs/Chart'], function (chart) {
         return result;
     }
 
-    function display_search_results(onclick) {
-        return function (json) {
-            var result_array = [],
-            items = json.items,
-            results_div = document.getElementById('search_results');
+    function display_search_results(onclick, json) {
+        var result_array = [],
+        items = json.items,
+        results_div = document.getElementById('search_results');
 
-            items.forEach(function (element, index) {
-                var class_name = 'result',
-                onclick_wrapper = function () { onclick(element.url); };
+        items.forEach(function (element, index) {
+            var class_name = 'result',
+            bound_onclick = onclick.bind(null, element.url);
 
-                result_array.push(format_tag('div', class_name + index,
-                                             class_name, element.full_name,
-                                             onclick_wrapper));
-            });
+            result_array.push(format_tag('div', class_name + index,
+                                         class_name, element.full_name,
+                                         bound_onclick));
+        });
 
-            remove_children(results_div);
+        remove_children(results_div);
 
-            results_div.appendChild(create_fragment_from_array(result_array));
-        }
+        results_div.appendChild(create_fragment_from_array(result_array));
     }
 
     function extract_username(url) {

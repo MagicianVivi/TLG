@@ -70,7 +70,7 @@ define(['./display', './config'], function (display, config) {
         );
     }
 
-    function call_search_api(value) {
+    function call_search_api() {
 
         function format_search(field_id) {
             var field = document.getElementById(field_id),
@@ -80,7 +80,7 @@ define(['./display', './config'], function (display, config) {
         }
 
         call_api(config.search_endpoint, format_search(search_field_id), 
-                 display.search_results(call_repo_api), true);
+                 display.search_results.bind(null, call_repo_api), true);
     }
 
     function call_repo_api(value) {
@@ -92,7 +92,7 @@ define(['./display', './config'], function (display, config) {
       For bookmarked search, unformat it before putting it back into the
       search field
     */
-    function call_bookmark() {
+    function parse_bookmark() {
         var split_hash = window.location.hash.split('='),
         key = split_hash[0],
         value = split_hash[1];
@@ -111,7 +111,7 @@ define(['./display', './config'], function (display, config) {
     return {
         call_search_api: call_search_api,
         call_repo_api: call_repo_api,
-        call_bookmark: call_bookmark
+        parse_bookmark: parse_bookmark
     };
 
 });

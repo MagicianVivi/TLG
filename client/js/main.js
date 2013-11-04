@@ -5,7 +5,7 @@ require(['lib/requirejs/domReady!', 'modules/api'], function (domReady, api) {
 
     // If bookmarked search, send request after load
     if (window.location.hash !== ''){
-        api.call_bookmark();
+        api.parse_bookmark();
     }
 
 });
