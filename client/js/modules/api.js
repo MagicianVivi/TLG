@@ -1,5 +1,9 @@
 define(['./display', './config'], function (display, config) {
     'use strict';
+    
+    var search_field_id = 'search_field',
+    search_key = 'q',
+    repo_key = 'url';
 
     function get_json(url, callback) {
         var request = new XMLHttpRequest();
@@ -21,16 +25,15 @@ define(['./display', './config'], function (display, config) {
         request.send();
     }
 
-    function create_query_string(field_id, search) {
+    function create_query_string(value, search) {
         search = (search === undefined) ? false : search;
 
-        var key,
-        value = document.getElementById(field_id).getAttribute('data');
+        var key;
 
         if (search === true) {
-            key = 'q';
+            key = search_key;
         } else {
-            key = 'url';
+            key = repo_key;
         }
 
         return key + '=' + value;
@@ -41,67 +44,74 @@ define(['./display', './config'], function (display, config) {
     }
 
     function error_alert(key) {
-        alert('Error: the ' + key + ' request did not work, please try again');
+        alert('Error: the request to the endpoint /' + 
+                key + ' did not work, please try again');
+    }
+    
+    function update_hash(query) {
+        window.location.hash = "/" + query;
     }
 
-    function call_search_api() {
+    function call_api(endpoint, query, callback, search) {
+        var query_string = create_query_string(query, search);
+
+        // put query_string in hash to make url bookmarkable
+        update_hash(query_string);
+
+        get_json(
+            construct_url(endpoint, query_string),
+            function (data) {
+                if (data === undefined) {
+                    error_alert(endpoint);
+                } else {
+                    callback(data);
+                }
+            }
+        );
+    }
+
+    function call_search_api(value) {
 
         function format_search(field_id) {
             var field = document.getElementById(field_id),
             query = field.value.trim().replace(/\s+/g, '+');
 
-            // set query to data attribute for further work
-            field.setAttribute('data', query);
+            return query;
         }
 
-        var query_string,
-        field_id = 'search_field';
-
-        format_search(field_id);
-        query_string = create_query_string(field_id, true);
-
-        // put query_string in hash to make url bookmarkable
-        window.location.hash = "/" + query_string;
-
-        get_json(
-            construct_url(config.search_endpoint, query_string),
-            function (data) {
-                if (data === undefined) {
-                    error_alert('search');
-                } else {
-                    display.search_results(data, call_repo_api);
-                }
-            }
-        );
+        call_api(config.search_endpoint, format_search(search_field_id), 
+                 display.search_results(call_repo_api), true);
     }
 
-    function call_repo_api() {
-        var query_string = create_query_string(this.id);
-
-        get_json(
-            construct_url(config.repository_endpoint, query_string),
-            function (data) {
-                if (data === undefined) {
-                    error_alert('repository')
-                } else {
-                    display.repository_results(data);
-                }
-            }
-        );
+    function call_repo_api(value) {
+        call_api(config.repository_endpoint, value, 
+                 display.repository_results);
     }
 
     /*
       For bookmarked search, unformat it before putting it back into the
       search field
     */
-    function unformat_hash() {
-        return window.location.hash.split('=')[1].replace('+', ' ');
+    function call_bookmark() {
+        var split_hash = window.location.hash.split('='),
+        key = split_hash[0],
+        value = split_hash[1];
+        
+        if (key.endsWith(search_key)) {
+            document.getElementById(search_field_id).value = value.replace(
+                '+', ' ');
+            call_search_api();
+        } else if (key.endsWith(repo_key)) {
+            call_repo_api(value);
+        } else {
+            alert('Error: unvalid bookmarking');
+        }
     }
 
     return {
         call_search_api: call_search_api,
         call_repo_api: call_repo_api,
-        unformat_hash: unformat_hash
+        call_bookmark: call_bookmark
     };
 
 });

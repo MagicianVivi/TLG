@@ -16,12 +16,11 @@ define(['../lib/chartjs/Chart'], function (chart) {
         return fragment;
     }
 
-    function format_tag(tag, id, class_name, text, data, onclick){
+    function format_tag(tag, id, class_name, text, onclick){
         var result = document.createElement(tag);
         result.id = id;
         result.className = class_name;
         result.textContent = text;
-        result.setAttribute('data', data);
 
         if (onclick !== undefined) {
             result.addEventListener('click', onclick, false);
@@ -30,21 +29,25 @@ define(['../lib/chartjs/Chart'], function (chart) {
         return result;
     }
 
-    function display_search_results(json, onclick) {
-        var result_array = [],
-        items = json.items,
-        results_div = document.getElementById('search_results');
+    function display_search_results(onclick) {
+        return function (json) {
+            var result_array = [],
+            items = json.items,
+            results_div = document.getElementById('search_results');
 
-        items.forEach(function (element, index) {
-            var class_name = 'result';
-            result_array.push(format_tag('div', class_name + index,
-                                            class_name, element.full_name,
-                                            element.url, onclick));
-        });
+            items.forEach(function (element, index) {
+                var class_name = 'result',
+                onclick_wrapper = function () { onclick(element.url); };
 
-        remove_children(results_div);
+                result_array.push(format_tag('div', class_name + index,
+                                             class_name, element.full_name,
+                                             onclick_wrapper));
+            });
 
-        results_div.appendChild(create_fragment_from_array(result_array));
+            remove_children(results_div);
+
+            results_div.appendChild(create_fragment_from_array(result_array));
+        }
     }
 
     function extract_username(url) {
@@ -183,7 +186,7 @@ define(['../lib/chartjs/Chart'], function (chart) {
         contributors.forEach(function (element, index) {
             var class_name = 'contributor';
             li_array.push(format_tag('li', class_name + index, class_name, 
-                                        extract_username(element), element));
+                                     extract_username(element)));
         });
 
         li_array.sort(sort_by_username);
