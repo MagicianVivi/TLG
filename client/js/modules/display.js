@@ -1,10 +1,18 @@
 define(['../lib/chartjs/Chart'], function (chart) {
     'use strict';
-    
-    function remove_children(parent) {
-        while (parent.lastChild) {
-            parent.removeChild(parent.lastChild);
-        }
+
+    var results_id = 'results',
+    contributors_id = 'contributors',
+    timeline_id = 'timeline_canvas',
+    impact_id = 'impact_canvas',
+    repository_id = 'repository';
+
+    function hide(id) {
+        document.getElementById(id).className = 'hidden';
+    }
+
+    function unhide(id) {
+        document.getElementById(id).className = '';
     }
 
     function create_fragment_from_array(array) {
@@ -16,11 +24,10 @@ define(['../lib/chartjs/Chart'], function (chart) {
         return fragment;
     }
 
-    function format_tag(tag, id, class_name, text, onclick){
+    function format_tag(tag, id, class_name){
         var result = document.createElement(tag);
         result.id = id;
         result.className = class_name;
-        result.textContent = text;
 
         if (onclick !== undefined) {
             result.addEventListener('click', onclick, false);
@@ -30,37 +37,53 @@ define(['../lib/chartjs/Chart'], function (chart) {
     }
 
     function display_search_results(onclick, json) {
+
+        function remove_children(parent) {
+            while (parent.lastChild) {
+                parent.removeChild(parent.lastChild);
+            }
+        }
+
         var result_array = [],
         items = json.items,
-        results_div = document.getElementById('search_results');
+        results_div = document.getElementById(results_id),
+        tmp_node,
+        header,
+        description;
 
         items.forEach(function (element, index) {
             var class_name = 'result',
             bound_onclick = onclick.bind(null, element.url);
 
-            result_array.push(format_tag('div', class_name + index,
-                                         class_name, element.full_name,
-                                         bound_onclick));
+            header = document.createElement('h3');
+            header.textContent = element.full_name;
+            description = document.createElement('p');
+            description.textContent = element.description;
+
+            tmp_node = format_tag('div', class_name + index, class_name);
+            tmp_node.addEventListener('click', bound_onclick, false);
+            
+            tmp_node.appendChild(header);
+            tmp_node.appendChild(description);
+            
+            result_array.push(tmp_node);
         });
 
         remove_children(results_div);
 
         results_div.appendChild(create_fragment_from_array(result_array));
+
+        hide(repository_id);
+        unhide(results_id);
     }
 
     function extract_username(url) {
         return url.slice(url.lastIndexOf("/") + 1);
     }
 
-    function prepare_chart(id, width, height) {
-        var canvas = document.createElement('canvas'),
+    function prepare_chart(id) {
+        var canvas = document.getElementById(id),
         ctx = canvas.getContext('2d');
-
-        canvas.id = id;
-        canvas.width = width;
-        canvas.height = height;
-
-        document.body.appendChild(canvas);
 
         return new Chart(ctx);
     }
@@ -68,15 +91,16 @@ define(['../lib/chartjs/Chart'], function (chart) {
     function display_timeline(commits) {
 
         function format_timeline_data(commits){
-
-            function get_month_name(month) {
-                var names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 
-                             'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-                return names[month];
-            }
             
             function make_label(month_year) {
+
+                function get_month_name(month) {
+                    var names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                                 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+                    return names[month];
+                }
+
                 var split = month_year.split(' ');            
                 return get_month_name(split[0]) + ' ' + split[1];
             }
@@ -154,7 +178,7 @@ define(['../lib/chartjs/Chart'], function (chart) {
                 scaleFontSize: 9
             };
 
-            prepare_chart('timeline_canvas', '1000', '500').Bar(data, options);
+            prepare_chart(timeline_id).Bar(data, options);
         }
 
         draw_timeline(format_timeline_data(commits));
@@ -180,8 +204,7 @@ define(['../lib/chartjs/Chart'], function (chart) {
            i++;
         }
 
-        prepare_chart('impact_canvas', '500', '500').Pie(data);
-        
+        prepare_chart(impact_id).Pie(data);
     }
 
     function display_contributors_list(contributors){
@@ -197,27 +220,32 @@ define(['../lib/chartjs/Chart'], function (chart) {
             return 0;
         }
 
-        var list,
-        li_array = [];
+        var contributors_list,
+        contributors_array = [],
+        tmp_node;
 
         contributors.forEach(function (element, index) {
             var class_name = 'contributor';
-            li_array.push(format_tag('li', class_name + index, class_name, 
-                                     extract_username(element)));
+
+            tmp_node = format_tag('div', class_name + index, class_name);
+            tmp_node.textContent = extract_username(element);
+
+            contributors_array.push(tmp_node);
         });
 
-        li_array.sort(sort_by_username);
+        contributors_array.sort(sort_by_username);
 
-        list = document.createElement('ul');
-        list.appendChild(create_fragment_from_array(li_array));
-        
-        document.body.appendChild(list);
+        contributors_list = document.getElementById(contributors_id);
+        contributors_list.appendChild(
+            create_fragment_from_array(contributors_array));        
     }
 
     function display_repository_results(json) {
+        hide(results_id);
         display_timeline(json.commits);
         display_contributors_impact(json.commits);
         display_contributors_list(json.contributors);
+        unhide(repository_id)
     }
 
     return {

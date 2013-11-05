@@ -1,0 +1,41 @@
+.hidden {
+    display: none;
+}
+
+#search {
+    border-bottom: 2px solid rgb(243, 134, 48);
+    padding-bottom: 30px;
+    padding-top: 30px;
+    text-align: center;
+}
+
+.result {
+    padding: 10px 10%;
+    border-bottom: 1px solid rgb(224, 224, 224);
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.result h3 {
+    color: blue;
+    text-decoration: underline;
+}
+
+#contributors {
+    width: 20%;
+    height: 100%;
+    float: left;   
+    border-right: 2px solid rgb(243, 134, 48);
+}
+
+.contributor {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgb(224, 224, 224);
+    font-size: 18px;
+    text-align: center;
+}
+
+#charts {
+    padding-top: 10px;
+}

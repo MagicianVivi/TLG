@@ -6,11 +6,23 @@
     <script type="text/javascript" data-main="js/main.js" 
             src="js/lib/requirejs/require.js">
     </script>
+    <link rel="stylesheet" type="text/css" href="css/main.css" />
   </head>
   <body>
-    <label for="search_field">The Long Git search :</label>
-    <input type="search" name="search_field" id="search_field"/>
-    <button id="submit_query">GO!</button>
-    <div id="search_results">Here shall be results!</div>
+    <header id="search">
+      <label for="search_field">The Long Git search :</label>
+      <input type="search" name="search_field" id="search_field"/>
+      <button id="submit_query">Step!</button>
+    </header>
+    <div id="results"></div>
+    <div id="repository" class="hidden">
+      <div id="contributors"></div>
+      <div id="charts">
+        <canvas id="timeline_canvas" width="800" height="400">
+        </canvas>
+        <canvas id="impact_canvas" width="400" height="400">
+        </canvas>
+      </div>
+    </div>
   </body>
 </html>
