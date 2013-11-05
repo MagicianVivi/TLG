@@ -52,6 +52,19 @@ define(['../lib/chartjs/Chart'], function (chart) {
         return url.slice(url.lastIndexOf("/") + 1);
     }
 
+    function prepare_chart(id, width, height) {
+        var canvas = document.createElement('canvas'),
+        ctx = canvas.getContext('2d');
+
+        canvas.id = id;
+        canvas.width = width;
+        canvas.height = height;
+
+        document.body.appendChild(canvas);
+
+        return new Chart(ctx);
+    }
+
     function display_timeline(commits) {
 
         function format_timeline_data(commits){
@@ -120,8 +133,8 @@ define(['../lib/chartjs/Chart'], function (chart) {
             })
 
             returned_data.datasets = [{
-                fillColor : "rgba(151,187,205,0.5)",
-			          strokeColor : "rgba(151,187,205,1)",
+                fillColor : '#F38630',
+			          strokeColor : '#F38630',
                 data : data
             }];
 
@@ -130,45 +143,48 @@ define(['../lib/chartjs/Chart'], function (chart) {
             return returned_data;
         }
 
-        var canvas = document.createElement('canvas'),
-        ctx = canvas.getContext('2d'),
-        data = format_timeline_data(commits);
+        function draw_timeline(data){
+            var options = {
+                scaleShowGridLines: false,
+                /*
+                  Even with integer value the string representation can be
+                  in floating point notation…
+                */
+                scaleLabel: '<%=value.split(".")[0]%>',
+                scaleFontSize: 9
+            };
 
-        canvas.id = 'chart2';
-        canvas.width = '500';
-        canvas.height = '500';        
+            prepare_chart('timeline_canvas', '1000', '500').Bar(data, options);
+        }
 
-        new Chart(ctx).Bar(data);
-        document.body.appendChild(canvas);
+        draw_timeline(format_timeline_data(commits));
     }
 
     function display_contributors_impact(commits) {
-        var canvas = document.createElement('canvas'),
-        color = function () {
-            return '#'+Math.floor(Math.random()*16777215).toString(16);
-        },
-        ctx = canvas.getContext('2d'),
-        data = [];
-
-        canvas.id = 'myChart';
-        canvas.width = '500';
-        canvas.height = '500';
         
-        for(var key in commits) {
-           data.push({
-               value: commits[key].length,
-               color: color(),
-               label: extract_username(key)
-           }); 
+        function color(i) {
+            var color_array = ['#F38630', '#E0E4CC', '#69D2E7'];
+            return color_array[i % color_array.length];
         }
 
-        new Chart(ctx).Pie(data);
-        document.body.appendChild(canvas);
+        var data = [],
+        key,
+        i = 0;
+
+        for(key in commits) {
+           data.push({
+               value: commits[key].length,
+               color: color(i),
+               label: extract_username(key)
+           }); 
+           i++;
+        }
+
+        prepare_chart('impact_canvas', '500', '500').Pie(data);
+        
     }
 
     function display_contributors_list(contributors){
-        var list,
-        li_array = [];
 
         function sort_by_username(a, b) {
             if (a.textContent.toLowerCase() > b.textContent.toLowerCase()) {
@@ -180,6 +196,9 @@ define(['../lib/chartjs/Chart'], function (chart) {
 
             return 0;
         }
+
+        var list,
+        li_array = [];
 
         contributors.forEach(function (element, index) {
             var class_name = 'contributor';
