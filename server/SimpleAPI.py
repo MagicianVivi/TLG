@@ -25,7 +25,7 @@ def get_repository_info(request_dict, endpoint):
 
     params = dict(request_dict)
     # Remove url from request args before passing them to the request
-    repo_url = params.pop('url')[0]
+    repo_url = params.pop('q')[0]
 
     return get_request_json(repo_url + endpoint, params)
 
