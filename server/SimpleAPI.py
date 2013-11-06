@@ -9,11 +9,21 @@ def get_request_json(url, params={}):
     """
     Helper for sending a get request and getting the returned json
     """
-    auth_params = params.copy()
+    auth_params = dict(params)
     auth_params['client_id'] = app.config['GITHUB_CLIENT_ID']
     auth_params['client_secret'] = app.config['GITHUB_CLIENT_SECRET']
     req = get(url, params=auth_params)
     return req.json()
+
+def get_repository_info(request_dict, endpoint):
+    """
+    """
+    params = dict(request_dict)
+    # Remove url from request args before passing them to the request
+    repo_url = params.pop('url')[0]
+
+    return get_request_json(repo_url + endpoint, params)
+
 
 @app.route('/search', methods=['GET'])
 @origin(app.config['ORIGIN'])
@@ -22,12 +32,11 @@ def search():
     Endpoint for calling Github search API.
     Pass the parameters given in the query_string 'as is' so that the user
     is free to use the filters from Github
-    Return the JSON sent by the API
-    TODO : think of a way to implement order and sort
+    Return the JSON sent by the API.
     """
 
     query_url = app.config['GITHUB_API_SEARCH_URL'] + 'repositories'
-    query_data = get_request_json(query_url, params=request.args)
+    query_data = get_request_json(query_url, request.args)
     return jsonify(query_data)        
 
 @app.route('/commits', methods=['GET'])
@@ -55,27 +64,26 @@ def commits():
         of their commits as value.
         """
 
-        results = {}
+        results = {'timeline': []}
+        impact = {}
     
         for commit_object in commits:
+            results['timeline'].append(format_commit(commit_object['commit']))
             # The top level author object is null on some commit
             # mirroring problem on github end???
             author = commit_object.get('author',None)
-            commit = format_commit(commit_object['commit'])
             if author is not None:
                 author_url = author['url']
-                results.setdefault(author_url, []).append(commit)
+                impact[author_url] = impact.get(author_url, 0) + 1
             else:
-                results.setdefault('anonymous', []).append(commit)
+                impact['anonymous'] = impact.get('anonymous', 0) + 1
+                
+        results['impact'] = impact
 
         return results
-    
-    repo_url = request.args.get('url')
 
-    commits_params = {'per_page' : 100}
-    commits_data = get_request_json(repo_url + '/commits', commits_params)
-
-    return jsonify(commits = process_commits(commits_data))
+    return jsonify(process_commits(
+        get_repository_info(request.args, '/commits')))
 
 @app.route('/contributors', methods=['GET'])
 @origin(app.config['ORIGIN'])
@@ -93,11 +101,8 @@ def contributors():
             
         return [ u['url'] for u in contributors ]
 
-    repo_url = request.args.get('url')
-
-    contributors_data = get_request_json(repo_url + '/contributors')
-
-    return jsonify(contributors = format_contributors(contributors_data))
+    return jsonify(contributors = format_contributors(
+        get_repository_info(request.args, '/contributors')))
 
 
 if __name__ == '__main__':
