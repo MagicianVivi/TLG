@@ -36,7 +36,7 @@ define(['../lib/chartjs/Chart'], function (chart) {
         return result;
     }
 
-    function display_search_results(onclick, json) {
+    function display_search_results(json) {
 
         function remove_children(parent) {
             while (parent.lastChild) {
@@ -53,7 +53,6 @@ define(['../lib/chartjs/Chart'], function (chart) {
 
         items.forEach(function (element, index) {
             var class_name = 'result',
-            bound_onclick = onclick.bind(null, element.url);
 
             header = document.createElement('h3');
             header.textContent = element.full_name;
@@ -61,8 +60,8 @@ define(['../lib/chartjs/Chart'], function (chart) {
             description.textContent = element.description;
 
             tmp_node = format_tag('div', class_name + index, class_name);
-            tmp_node.addEventListener('click', bound_onclick, false);
-            
+            tmp_node.setAttribute('data', element.url);
+
             tmp_node.appendChild(header);
             tmp_node.appendChild(description);
             
@@ -106,12 +105,11 @@ define(['../lib/chartjs/Chart'], function (chart) {
                 return get_month_name(split[0]) + ' ' + split[1];
             }
 
-            function sort_labels(a, b) {
-                
-                function parse_int(element) {
-                    return parseInt(element, 10);
-                }
+            function parse_int(element) {
+                return parseInt(element, 10);
+            }
 
+            function sort_labels(a, b) {
                 var split_a = a.split(' ').map(parse_int);
                 var split_b = b.split(' ').map(parse_int);
                 
@@ -131,39 +129,77 @@ define(['../lib/chartjs/Chart'], function (chart) {
 
                 return 0;
             }
+            
+            function fill_gaps(sorted_keys, tmp_data) {                
+                var split,
+                month,
+                year,
+                next_month,
+                next_year,
+                index,
+                new_value;
 
-            var tmp_obj = {},
+                for (index = 0; index < sorted_keys.length - 1; index++) {
+                    split = sorted_keys[index].split(' ');
+                    month = parse_int(split[0]);
+                    year = parse_int(split[1]);
+                    split = sorted_keys[index + 1].split(' ');
+                    next_month = parse_int(split[0]);
+                    next_year = parse_int(split[1]);
+
+                    if (month !== 11) { 
+                        if (next_month !== month + 1 ||
+                            next_year !== year) {
+                            new_value = (month + 1) + ' ' + year;
+                        }
+                    } else {
+                        if (next_year !== year + 1 || next_month !== 0) {
+                            new_value = 0 + ' ' + (year + 1);
+                        }
+                    }
+
+                    if (new_value !== undefined) {
+                        tmp_data[new_value] = 0;
+                        sorted_keys.splice(index + 1, 0, new_value);                            
+                        new_value = undefined;
+                    }
+
+                };
+                
+            }
+
+            var tmp_data = {},
             returned_data = {},
             date,
             month_year,
             sorted_keys,
-            data = [];
+            ordered_data = [];
 
-            for (var key in commits){
-                commits[key].forEach( function (element) {
-                    date = new Date(Date.parse(element));
-                    month_year = date.getMonth() + ' ' + date.getFullYear();
+            commits.forEach(function (element) {
+                date = new Date(Date.parse(element));
+                month_year = date.getMonth() + ' ' + date.getFullYear();
 
-                    if (tmp_obj.hasOwnProperty(month_year)) {
-                        tmp_obj[month_year] += 1;
-                    } else {
-                        tmp_obj[month_year] = 1;
-                    }
-                });
-            }
+                if (tmp_data.hasOwnProperty(month_year)) {
+                    tmp_data[month_year] += 1;
+                } else {
+                    tmp_data[month_year] = 1;
+                }
+            });
             
-            sorted_keys = Object.keys(tmp_obj).sort(sort_labels);
+            sorted_keys = Object.keys(tmp_data).sort(sort_labels);
+            fill_gaps(sorted_keys, tmp_data);
+            returned_data.labels = sorted_keys.map(make_label);
+
             sorted_keys.forEach(function (key) {
-                data.push(tmp_obj[key]);
+                ordered_data.push(tmp_data[key]);
             })
 
             returned_data.datasets = [{
                 fillColor : '#F38630',
 			          strokeColor : '#F38630',
-                data : data
+                data : ordered_data
             }];
 
-            returned_data.labels = sorted_keys.map(make_label);
 
             return returned_data;
         }
@@ -192,18 +228,29 @@ define(['../lib/chartjs/Chart'], function (chart) {
             return color_array[i % color_array.length];
         }
 
+        function sort_users(a, b) {
+            if (commits[a] > commits[b]) {
+                return -1;
+            }
+            if (commits[a] < commits[b]) {
+                return 1;
+            }
+
+            return 0;
+        }
+
         var data = [],
-        key,
+        sorted_keys = Object.keys(commits).sort(sort_users),
         i = 0;
 
-        for(key in commits) {
+        sorted_keys.forEach(function (key) {
            data.push({
-               value: commits[key].length,
+               value: commits[key],
                color: color(i),
                label: extract_username(key)
            }); 
            i++;
-        }
+        });
 
         prepare_chart(impact_id).Pie(data);
     }
@@ -245,8 +292,8 @@ define(['../lib/chartjs/Chart'], function (chart) {
     }
 
     function display_commits_results(json) {
-        display_timeline(json.commits);
-        display_contributors_impact(json.commits);
+        display_timeline(json.timeline);
+        display_contributors_impact(json.impact);
         hide(results_id);
         unhide(charts_id);
     }

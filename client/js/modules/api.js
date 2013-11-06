@@ -25,18 +25,25 @@ define(['./display', './config'], function (display, config) {
         request.send();
     }
 
-    function create_query_string(value, search) {
+    function create_query_string(value, query_params, search) {
         search = (search === undefined) ? false : search;
 
-        var key;
+        var key,
+        query_string;
 
         if (search === true) {
             key = search_key;
         } else {
             key = repo_key;
         }
+        
+        query_string = key + '=' + value;
+        
+        for(key in query_params) {
+            query_string += '&' + key + '=' + query_params[key];
+        }
 
-        return key + '=' + value;
+        return query_string;
     }
 
     function construct_url(endpoint, query_string) {
@@ -52,8 +59,8 @@ define(['./display', './config'], function (display, config) {
         window.location.hash = "/" + query;
     }
 
-    function call_api(endpoint, query, callback, search) {
-        var query_string = create_query_string(query, search);
+    function call_api(endpoint, callback, query, query_params, search) {
+        var query_string = create_query_string(query, query_params, search);
 
         // put query_string in hash to make url bookmarkable
         update_hash(query_string);
@@ -70,7 +77,7 @@ define(['./display', './config'], function (display, config) {
         );
     }
 
-    function call_search_api() {
+    function call_search_api(query_params) {
 
         function format_search(field_id) {
             var field = document.getElementById(field_id),
@@ -78,16 +85,34 @@ define(['./display', './config'], function (display, config) {
 
             return query;
         }
+        
+        function search_callback(json) {
+            var commits_params = { per_page: '100' },
+            forEach = Array.prototype.forEach,
+            url;
 
-        call_api(config.search_endpoint, format_search(search_field_id), 
-                 display.search_results.bind(null, call_repo_api), true);
+            display.search_results(json);
+
+            forEach.call(document.querySelectorAll('.result'), 
+                function (element) {
+                    url = element.getAttribute('data');
+                    element.addEventListener('click',
+                        call_repo_api.bind(null, url, commits_params), false);
+                });
+        }
+
+        call_api(config.search_endpoint, 
+                 search_callback,
+                 format_search(search_field_id),
+                 query_params,
+                 true);
     }
 
-    function call_repo_api(value) {
-        call_api(config.contributors_endpoint, value,
-                display.contributors_list);
-        call_api(config.commits_endpoint, value, 
-                 display.commits_results);
+    function call_repo_api(value, commits_params) {
+        call_api(config.contributors_endpoint, display.contributors_list,
+                value);
+        call_api(config.commits_endpoint, display.commits_results,
+                value, commits_params);
     }
 
     /*
@@ -95,16 +120,33 @@ define(['./display', './config'], function (display, config) {
       search field
     */
     function parse_bookmark() {
-        var split_hash = window.location.hash.split('='),
-        key = split_hash[0],
-        value = split_hash[1];
         
-        if (key.endsWith(search_key)) {
-            document.getElementById(search_field_id).value = value.replace(
-                '+', ' ');
-            call_search_api();
-        } else if (key.endsWith(repo_key)) {
-            call_repo_api(value);
+        function parse_query_string(query_string) {
+            var query_dict = {};
+
+            query_string.split('&').forEach(function (element) {
+                var key_value = element.split('=');
+                query_dict[key_value[0]] = key_value[1];
+            });
+            
+            return query_dict;
+        }
+
+        var hash_value = window.location.hash.slice(2),
+        query_dict = parse_query_string(hash_value),
+        url;
+        
+        if (query_dict.hasOwnProperty(search_key)) {
+            document.getElementById(search_field_id).value = 
+                query_dict[search_key].replace('+', ' ');
+            delete query_dict[search_key];
+
+            call_search_api(query_dict);
+        } else if (query_dict.hasOwnProperty(repo_key)) {
+            url = query_dict[repo_key];
+            delete query_dict[repo_key];
+
+            call_repo_api(url, query_dict);
         } else {
             alert('Error: unvalid bookmarking');
         }
@@ -115,5 +157,4 @@ define(['./display', './config'], function (display, config) {
         call_repo_api: call_repo_api,
         parse_bookmark: parse_bookmark
     };
-
 });
