@@ -84,8 +84,10 @@ define(['./display', './config'], function (display, config) {
     }
 
     function call_repo_api(value) {
-        call_api(config.repository_endpoint, value, 
-                 display.repository_results);
+        call_api(config.contributors_endpoint, value,
+                display.contributors_list);
+        call_api(config.commits_endpoint, value, 
+                 display.commits_results);
     }
 
     /*

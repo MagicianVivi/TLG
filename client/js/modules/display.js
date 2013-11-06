@@ -5,7 +5,7 @@ define(['../lib/chartjs/Chart'], function (chart) {
     contributors_id = 'contributors',
     timeline_id = 'timeline_canvas',
     impact_id = 'impact_canvas',
-    repository_id = 'repository';
+    charts_id = 'charts';
 
     function hide(id) {
         document.getElementById(id).className = 'hidden';
@@ -72,8 +72,9 @@ define(['../lib/chartjs/Chart'], function (chart) {
         remove_children(results_div);
 
         results_div.appendChild(create_fragment_from_array(result_array));
-
-        hide(repository_id);
+        
+        hide(contributors_id);
+        hide(charts_id);
         unhide(results_id);
     }
 
@@ -207,7 +208,7 @@ define(['../lib/chartjs/Chart'], function (chart) {
         prepare_chart(impact_id).Pie(data);
     }
 
-    function display_contributors_list(contributors){
+    function display_contributors_list(json){
 
         function sort_by_username(a, b) {
             if (a.textContent.toLowerCase() > b.textContent.toLowerCase()) {
@@ -224,7 +225,7 @@ define(['../lib/chartjs/Chart'], function (chart) {
         contributors_array = [],
         tmp_node;
 
-        contributors.forEach(function (element, index) {
+        json.contributors.forEach(function (element, index) {
             var class_name = 'contributor';
 
             tmp_node = format_tag('div', class_name + index, class_name);
@@ -238,18 +239,21 @@ define(['../lib/chartjs/Chart'], function (chart) {
         contributors_list = document.getElementById(contributors_id);
         contributors_list.appendChild(
             create_fragment_from_array(contributors_array));        
+        
+        hide(results_id);
+        unhide(contributors_id);
     }
 
-    function display_repository_results(json) {
-        hide(results_id);
+    function display_commits_results(json) {
         display_timeline(json.commits);
         display_contributors_impact(json.commits);
-        display_contributors_list(json.contributors);
-        unhide(repository_id)
+        hide(results_id);
+        unhide(charts_id);
     }
 
     return {
         search_results: display_search_results,
-        repository_results: display_repository_results
+        commits_results: display_commits_results,
+        contributors_list: display_contributors_list
     };
 });

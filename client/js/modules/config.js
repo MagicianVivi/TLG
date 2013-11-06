@@ -1,11 +1,13 @@
 define(function () {
     var base_url = 'http://localhost:5000/',
-    repository_endpoint = 'repository',
+    commits_endpoint = 'commits',
+    contributors_endpoint = 'contributors',
     search_endpoint = 'search';
 
     return {
         base_url: base_url,
-        repository_endpoint: repository_endpoint,
+        commits_endpoint: commits_endpoint,
+        contributors_endpoint: contributors_endpoint,
         search_endpoint: search_endpoint
     }
 });

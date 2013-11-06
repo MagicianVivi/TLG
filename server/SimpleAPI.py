@@ -30,16 +30,14 @@ def search():
     query_data = get_request_json(query_url, params=request.args)
     return jsonify(query_data)        
 
-@app.route('/repository', methods=['GET'])
+@app.route('/commits', methods=['GET'])
 @origin(app.config['ORIGIN'])
-def repository():
+def commits():
     """
     Endpoint for getting a repository data from the Github API.
     Return a custom JSON containing the top contributors (for the last 100
     commits) with their Github API url as key and an array of their commits
-    (message and date) under the key 'commits' + a list of every contributors
-    on the repository (again their Github API url) in an array under the 
-    'contributors' key.
+    (message and date) under the key 'commits'
     """
 
     def format_commit(commit):
@@ -72,6 +70,22 @@ def repository():
 
         return results
     
+    repo_url = request.args.get('url')
+
+    commits_params = {'per_page' : 100}
+    commits_data = get_request_json(repo_url + '/commits', commits_params)
+
+    return jsonify(commits = process_commits(commits_data))
+
+@app.route('/contributors', methods=['GET'])
+@origin(app.config['ORIGIN'])
+def contributors():
+    """
+    Endpoint for getting the contributors of a repository from the Github API.
+    Returns a list of every contributors on the repository (their Github API
+    url) in an array under the 'contributors' key.
+    """
+    
     def format_contributors(contributors):
         """
         Return a list of the Github API url of contributors for the repository.
@@ -79,18 +93,12 @@ def repository():
             
         return [ u['url'] for u in contributors ]
 
-    returned_data = {}
-
     repo_url = request.args.get('url')
 
-    commits_params = {'per_page' : 100}
-    commits_data = get_request_json(repo_url + '/commits', commits_params)
-    returned_data['commits'] = process_commits(commits_data)
-
     contributors_data = get_request_json(repo_url + '/contributors')
-    returned_data['contributors'] = format_contributors(contributors_data)
 
-    return jsonify(returned_data)
+    return jsonify(contributors = format_contributors(contributors_data))
+
 
 if __name__ == '__main__':
     app.run()
