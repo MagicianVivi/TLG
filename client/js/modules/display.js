@@ -29,10 +29,6 @@ define(['../lib/chartjs/Chart'], function (chart) {
         result.id = id;
         result.className = class_name;
 
-        if (onclick !== undefined) {
-            result.addEventListener('click', onclick, false);
-        }
-
         return result;
     }
 
