@@ -7,17 +7,22 @@ app.config.from_object('configuration')
 
 def get_request_json(url, params={}):
     """
-    Helper for sending a get request and getting the returned json
+    Helper for sending a get request and getting the returned json.
     """
+
     auth_params = dict(params)
     auth_params['client_id'] = app.config['GITHUB_CLIENT_ID']
     auth_params['client_secret'] = app.config['GITHUB_CLIENT_SECRET']
+
     req = get(url, params=auth_params)
+
     return req.json()
 
 def get_repository_info(request_dict, endpoint):
     """
+    Helper for querying the Github repository API.
     """
+
     params = dict(request_dict)
     # Remove url from request args before passing them to the request
     repo_url = params.pop('url')[0]
@@ -43,25 +48,24 @@ def search():
 @origin(app.config['ORIGIN'])
 def commits():
     """
-    Endpoint for getting a repository data from the Github API.
-    Return a custom JSON containing the top contributors (for the last 100
-    commits) with their Github API url as key and an array of their commits
-    (message and date) under the key 'commits'
+    Endpoint for getting informations on the commits of a repository from the 
+    Github API.
+    Returns a json object with the dates of the commits in an array under
+    'timeline' and a json object with the url of the contributor and the
+    number of commits s/he did under the key 'impact'.
     """
-
     def format_commit(commit):
         """
-        Procces a commit object to return only the message and the timestamp in
-        a dict.
+        Helper for formatting commit.
+        Currently only return the date of the commit.
         """
 
         return commit['author']['date']
 
     def process_commits(commits):
         """
-        Process the commits of a repository from the Github API.
-        Return a dict with the url of every authors found as key, and an array
-        of their commits as value.
+        Process commits to obtain the data structure exposed in this function
+        parent docstring.
         """
 
         results = {'timeline': []}
@@ -93,7 +97,6 @@ def contributors():
     Returns a list of every contributors on the repository (their Github API
     url) in an array under the 'contributors' key.
     """
-    
     def format_contributors(contributors):
         """
         Return a list of the Github API url of contributors for the repository.
